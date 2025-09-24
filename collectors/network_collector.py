@@ -6,9 +6,9 @@ from collectors.base_collector import BaseCollector
 
 
 class NetworkCollector(BaseCollector):
-    \"\"\"
+    """
     Collector for network information from ZeroTier and Tailscale.
-    \"\"\"
+    """
     
     def __init__(self, db_config: dict, source_config: dict):
         super().__init__(db_config, source_config)
@@ -16,52 +16,52 @@ class NetworkCollector(BaseCollector):
         self.sudo_password = self._get_sudo_password()
         
     def _get_sudo_password(self) -> Optional[str]:
-        \"\"\"Read sudo password from file\"\"\"
+        """Read sudo password from file"""
         try:
             with open(self.sudo_password_path, 'r') as f:
                 for line in f:
                     if line.startswith('SUDO_PASSWORD='):
                         return line.split('=', 1)[1].strip()
         except Exception as e:
-            print(f\"Error reading sudo password file: {e}\")
+            print(f"Error reading sudo password file: {e}")
         return None
     
     def _run_command_with_sudo(self, command: List[str]) -> Optional[str]:
-        \"\"\"Run a command with sudo, using the password from file\"\"\"
+        """Run a command with sudo, using the password from file"""
         if not self.sudo_password:
-            print(\"Sudo password not available\")
+            print("Sudo password not available")
             return None
             
         try:
             # Use echo to pass password to sudo
-            full_command = f'echo \"{self.sudo_password}\" | sudo -S {" ".join(command)}'
+            full_command = f'echo "{self.sudo_password}" | sudo -S {" ".join(command)}'
             result = subprocess.run(full_command, shell=True, capture_output=True, text=True)
             
             if result.returncode == 0:
                 return result.stdout
             else:
-                print(f\"Command failed: {result.stderr}\")
+                print(f"Command failed: {result.stderr}")
                 return None
         except Exception as e:
-            print(f\"Error running command: {e}\")
+            print(f"Error running command: {e}")
             return None
     
     def _run_command(self, command: List[str]) -> Optional[str]:
-        \"\"\"Run a command without sudo\"\"\"
+        """Run a command without sudo"""
         try:
             result = subprocess.run(command, capture_output=True, text=True)
             
             if result.returncode == 0:
                 return result.stdout
             else:
-                print(f\"Command failed: {result.stderr}\")
+                print(f"Command failed: {result.stderr}")
                 return None
         except Exception as e:
-            print(f\"Error running command: {e}\")
+            print(f"Error running command: {e}")
             return None
     
     def collect(self):
-        \"\"\"Collect network information from ZeroTier and Tailscale\"\"\"
+        """Collect network information from ZeroTier and Tailscale"""
         if not self.connect_to_db():
             return False
         
@@ -89,27 +89,27 @@ class NetworkCollector(BaseCollector):
         # Collect SSH key information
         self._collect_ssh_info(root_entity_id)
         
-        print(\"Network information collection completed\")
+        print("Network information collection completed")
         return True
     
     def _collect_zerotier_info(self, root_entity_id: int):
-        \"\"\"Collect ZeroTier network information\"\"\"
-        print(\"Collecting ZeroTier information...\")
+        """Collect ZeroTier network information"""
+        print("Collecting ZeroTier information...")
         
         # Check if ZeroTier is installed
         result = self._run_command(['which', 'zerotier-cli'])
         if not result:
-            print(\"ZeroTier not found, skipping\")
+            print("ZeroTier not found, skipping")
             return
         
         # Get ZeroTier status
         status_output = self._run_command_with_sudo(['zerotier-cli', 'status'])
         if not status_output:
-            print(\"Could not get ZeroTier status\")
+            print("Could not get ZeroTier status")
             return
         
         # Parse status
-        status_lines = status_output.strip().split('\\n')
+        status_lines = status_output.strip().split('\n')
         status_info = {}
         
         for line in status_lines:
@@ -145,7 +145,7 @@ class NetworkCollector(BaseCollector):
         # Get ZeroTier networks
         networks_output = self._run_command_with_sudo(['zerotier-cli', 'listnetworks'])
         if networks_output:
-            network_lines = networks_output.strip().split('\\n')[1:]  # Skip header
+            network_lines = networks_output.strip().split('\n')[1:]  # Skip header
             
             for line in network_lines:
                 parts = line.split()
@@ -169,7 +169,7 @@ class NetworkCollector(BaseCollector):
                     
                     # Parse IP addresses from details
                     if details_output:
-                        ip_pattern = r'(\\d+\\.\\d+\\.\\d+\\.\\d+)(?:/\\d+)?'
+                        ip_pattern = r'(\d+\.\d+\.\d+\.\d+)(?:/\d+)?'
                         ip_matches = re.findall(ip_pattern, details_output)
                         if ip_matches:
                             network_details['ips'] = ip_matches
@@ -201,25 +201,25 @@ class NetworkCollector(BaseCollector):
                             self.add_metadata('entity', network_entity_id, 'ip_address', ip)
     
     def _collect_tailscale_info(self, root_entity_id: int):
-        \"\"\"Collect Tailscale network information\"\"\"
-        print(\"Collecting Tailscale information...\")
+        """Collect Tailscale network information"""
+        print("Collecting Tailscale information...")
         
         # Check if Tailscale is installed
         result = self._run_command(['which', 'tailscale'])
         if not result:
-            print(\"Tailscale not found, skipping\")
+            print("Tailscale not found, skipping")
             return
         
         # Get Tailscale status
         status_output = self._run_command_with_sudo(['tailscale', 'status', '--json'])
         if not status_output:
-            print(\"Could not get Tailscale status\")
+            print("Could not get Tailscale status")
             return
         
         try:
             status_data = json.loads(status_output)
         except json.JSONDecodeError:
-            print(\"Could not parse Tailscale status JSON\")
+            print("Could not parse Tailscale status JSON")
             return
         
         # Create Tailscale root node
@@ -291,8 +291,8 @@ class NetworkCollector(BaseCollector):
                         self.add_metadata('entity', peer_entity_id, 'tailscale_ip', ip)
     
     def _collect_ssh_info(self, root_entity_id: int):
-        \"\"\"Collect SSH key information and related IP addresses\"\"\"
-        print(\"Collecting SSH information...\")
+        """Collect SSH key information and related IP addresses"""
+        print("Collecting SSH information...")
         
         ssh_node_id = self.get_or_create_hierarchy_node(
             path='network_root/ssh',
@@ -309,13 +309,10 @@ class NetworkCollector(BaseCollector):
         import stat
         from pathlib import Path
         
-        # Allow custom SSH directories through config
-        ssh_dirs_config = self.source_config.get('ssh_directories', [
-            str(Path.home() / '.ssh'),
-            '/root/.ssh'
-        ])
-        
-        ssh_dirs = [Path(d) for d in ssh_dirs_config]
+        ssh_dirs = [
+            Path('/home/foomanchu8008/.ssh'),
+            Path('/root/.ssh')
+        ]
         
         for ssh_dir in ssh_dirs:
             try:
@@ -379,9 +376,9 @@ class NetworkCollector(BaseCollector):
                                     self.add_metadata('entity', pub_key_entity_id, 'private_key', key_file.name)
                                     
                             except Exception as e:
-                                print(f\"Error processing SSH key {key_file}: {e}\")
+                                print(f"Error processing SSH key {key_file}: {e}")
             except PermissionError:
-                print(f\"Permission denied accessing {ssh_dir}, skipping...\")
+                print(f"Permission denied accessing {ssh_dir}, skipping...")
                 continue
         
         # Add SSH service entity
@@ -401,10 +398,10 @@ class NetworkCollector(BaseCollector):
             local_ips = socket.gethostbyname_ex(hostname)[2]
             
             # Filter out loopback addresses
-            local_ips = [ip for ip in local_ips if not ip.startswith(\"127.\")]
+            local_ips = [ip for ip in local_ips if not ip.startswith("127.")]
             
             for ip in local_ips:
                 self.add_metadata('entity', ssh_entity_id, 'local_ip', ip)
             
         except Exception as e:
-            print(f\"Error getting local IP addresses: {e}\")
+            print(f"Error getting local IP addresses: {e}")
