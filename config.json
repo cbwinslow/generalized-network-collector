@@ -1,0 +1,12 @@
+{
+  "db_host": "localhost",
+  "db_name": "network_collector_db",
+  "db_user": "collector_user",
+  "db_password": "your_secure_password",
+  "db_port": 5432,
+  "source_config": {
+    "name": "network_collector",
+    "description": "Collects network information from ZeroTier, Tailscale, and SSH",
+    "sudo_password_path": "~/.env"
+  }
+}
